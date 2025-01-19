@@ -15,11 +15,14 @@ void memClear(double** array, int n);
 int main() {
     int format_flag;
     // Prompt user to enter format flag
-    printf("Enter format flag (ASCII - 0, Binary - 1): ");
-    scanf("%d", &format_flag);
+    // printf("Enter format flag (ASCII - 0, Binary - 1): ");
+    // scanf("%d", &format_flag);
 
     // Process the file based on the format flag
-    process(format_flag);
+    for(format_flag = 0 ; format_flag <=1 ; format_flag++){
+        printf(" format flag  %d",format_flag);
+        process(format_flag);
+    }
 
     return 0;
 }
