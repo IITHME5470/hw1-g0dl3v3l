@@ -49,7 +49,8 @@ void process(int format_flag) {
 
 // Function to free allocated memory for the 2D array
 void memClear(double** array, int n) {
-    for (int i = 0; i < n; i++) {
+    int i;
+    for (i = 0; i < n; i++) {
         free(array[i]);  // Free each row
     }
     free(array);  // Free the array of pointers
@@ -59,10 +60,11 @@ void memClear(double** array, int n) {
 double** create_array(int n) {
     // Allocate memory for the 2D array
     double** array = (double**)malloc(sizeof(double*) * n);
-    
-    for (int i = 0; i < n; i++) {
+    int i;
+    for (i = 0; i < n; i++) {
         array[i] = (double*)malloc(sizeof(double) * n);
-        for (int j = 0; j < n; j++) {
+        int j;
+        for (j = 0; j < n; j++) {
             array[i][j] = i + j;  // Initialize values based on row and column indices
         }
     }
@@ -84,9 +86,10 @@ void print_to_file(double** array, int n, int format_flag) {
             perror("Error opening ASCII file");
             return;
         }
-
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+        int i;
+        for (i = 0; i < n; i++) {
+            int j;
+            for (j = 0; j < n; j++) {
                 fprintf(file, "%.15lf ", array[i][j]);  // Write values with high precision
             }
             fprintf(file, "\n");
@@ -102,8 +105,8 @@ void print_to_file(double** array, int n, int format_flag) {
             perror("Error opening binary file");
             return;
         }
-
-        for (int i = 0; i < n; i++) {
+        int i;
+        for (i = 0; i < n; i++) {
             fwrite(array[i], sizeof(double), n, file);  // Write array data in binary format
         }
 

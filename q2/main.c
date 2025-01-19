@@ -219,7 +219,8 @@ void matrixVectorProduct(double** matrix, double* vector, int matID, double* pro
     int i;
     for (i = 0; i < matID; i++) { 
         double sum = 0;  
-        for (int j = 0; j < matID; j++) {
+        int j;
+        for (j = 0; j < matID; j++) {
             sum += matrix[i][j] * vector[j];
         }
         product[i] = sum; 
