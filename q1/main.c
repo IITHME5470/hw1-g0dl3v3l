@@ -20,7 +20,7 @@ int main() {
 
     // Process the file based on the format flag
     for(format_flag = 0 ; format_flag <=1 ; format_flag++){
-        printf(" format flag  %d",format_flag);
+        printf(" format flag  %d\n",format_flag);
         process(format_flag);
     }
 
