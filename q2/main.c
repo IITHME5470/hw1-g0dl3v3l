@@ -6,81 +6,91 @@
 #include <string.h>
 #include <time.h>
 
+int NumVec = 4;              // Number of vectors to process
+int matID[4] = {3, 5, 50, 80};  // Matrix IDs derived from the size of matrices
 
-int NumVec = 4;          // number of vectors
-int matID[4] = {3,5,50,80};  // the matrix id are derived from the size of the matrix
+char* inputFilePath = "../q2/inputfiles";  // Directory for input files
+char* time_log = "../q2/logs/timings";      // Directory for timing logs
 
-char* inputFilePath = "../q2/inputfiles";
-char* time_log = "../q2/logs/timings";
-
-void process(int NumVec , int matID);  //performs the business logic
-void* readInput(int num_args , ...);
-bool isEigenVector(double** matrix ,  double*vector, int n , double*lambda);
-void fileWrite(int matID, int vectorNumber , double eigenVal);
+// Function declarations
+void process(int NumVec, int matID);  
+void* readInput(int num_args, ...);
+bool isEigenVector(double** matrix, double* vector, int n, double* lambda);
+void fileWrite(int matID, int vectorNumber, double eigenVal);
 void matrixVectorProduct(double** matrix, double* vector, int matID, double* product);
 void CalTime(int matID, double totalTime, int iterations);
 
-int main(){
-    for(int i =0  ; i<sizeof(matID)/sizeof(int) ; i++){
-        process(NumVec ,matID[i]);
+int main() {
+    int i;
+    // Process each matrix ID in the matID array
+    for (i = 0; i < sizeof(matID) / sizeof(int); i++) {
+        process(NumVec, matID[i]);
     }
     return 0;
 }
-void process(int NunVec , int matID){
-    double** matrix = (double**)readInput(1,matID);
+
+// Function to process each matrix and its corresponding vectors
+void process(int NunVec, int matID) {
+    // Read the matrix from the input file
+    double** matrix = (double**)readInput(1, matID);
     
     clock_t start, end;
     double totalTime = 0.0;
 
+    int i;
+    for (i = 0; i < NumVec; i++) {
+        // Read the vector from the input file
+        double* vector = (double*)readInput(2, matID, i + 1);
+        double eigenVal;
 
-    for(int i = 0 ; i<NumVec;i++){
-        double * vector = (double*)readInput(2, matID , i+1);
-        double eigenVal ;
-
+        // Start timing the eigenvector check
         start = clock();
-        bool isEigen = isEigenVector(matrix , vector , matID,&eigenVal);
-
-        // End timing
+        bool isEigen = isEigenVector(matrix, vector, matID, &eigenVal);
         end = clock();
-        totalTime += ((double)(end - start)) / CLOCKS_PER_SEC; // Calculate total time in seconds
 
+        // Calculate the total time taken
+        totalTime += ((double)(end - start)) / CLOCKS_PER_SEC; 
 
+        // Output results to the console
         if (isEigen) {
-                // Print to screen
-                printf("vec_%06d_%06d.in : Yes : %.6f\n", matID, i+1, eigenVal);
-                // Append to file
-                fileWrite(matID, i+1, eigenVal);
-            } else {
-                // Print to screen
-                printf("vec_%06d_%06d.in : Not an eigenvector\n", matID, i+1);
-            }
+            printf("vec_%06d_%06d.in : Yes : %.6f\n", matID, i + 1, eigenVal);
+            // Append to file (commented)
+             fileWrite(matID, i + 1, eigenVal);
+        } else {
+            printf("vec_%06d_%06d.in : Not an eigenvector\n", matID, i + 1);
+        }
 
-        free(vector);
+        free(vector);  // Free allocated memory for the vector
     }
+
+    // Log the average computation time for the matrix
     CalTime(matID, totalTime, NumVec);
 
-    for (int i=0; i<matID; i++) {
+    // Free allocated memory for the matrix
+    for (i = 0; i < matID; i++) {
         free(matrix[i]);
     }
     free(matrix);
 }
 
-void * readInput(int num_args , ...){
+// Function to read input matrix/vector files dynamically using variable arguments
+void* readInput(int num_args, ...) {
     va_list args;
-    va_start(args ,num_args);
+    va_start(args, num_args);
 
-    // process matrix file reading
-    if(num_args == 1){
-        int n = va_arg(args , int);  // matrix ID
-        // memory allocation
+    // Case 1: Read a matrix from the file
+    if (num_args == 1) {
+        int n = va_arg(args, int);  // Matrix ID
+
+        // Allocate memory for the matrix
         double** matrix = (double**)malloc(sizeof(double*) * n);
-        for (int i = 0; i < n; i++) {
+        int i;
+        for (i = 0; i < n; i++) {
             matrix[i] = (double*)malloc(sizeof(double) * n);
         }
 
-        // reading from file
-        char* fileName = (char*)malloc(sizeof(char)*150);
-        //printf("%smat_%06d.in\n", inputFilePath, n);
+        // Construct file path
+        char* fileName = (char*)malloc(sizeof(char) * 150);
         sprintf(fileName, "%s/mat_%06d.in", inputFilePath, n);
         FILE* file = fopen(fileName, "r");
 
@@ -89,7 +99,7 @@ void * readInput(int num_args , ...){
             return NULL;
         }
 
-        // Reading line by line
+        // Read matrix from file line by line
         char* line = NULL;
         size_t Linelen = 0;
         int row = 0;
@@ -97,7 +107,6 @@ void * readInput(int num_args , ...){
         while (getline(&line, &Linelen, file) != -1 && row < n) {
             char* token;
             int col = 0;
-
             token = strtok(line, ",");
             while (token && col < n) {
                 matrix[row][col++] = atof(token);
@@ -112,19 +121,17 @@ void * readInput(int num_args , ...){
         fclose(file);
 
         return matrix;
-
     } 
-    // process vector file reading
-    else if(num_args == 2){
-         int n = va_arg(args , int);  // matrix ID
-         int vectorNumber = va_arg(args , int);
+    // Case 2: Read a vector from the file
+    else if (num_args == 2) {
+        int n = va_arg(args, int);  // Matrix ID
+        int vectorNumber = va_arg(args, int);
 
-         // Memory allocation
+        // Allocate memory for the vector
         double* vector = (double*)malloc(sizeof(double) * n);
 
-        // Filename
-        char* fileName = (char*)malloc(sizeof(char)*150);
-        //printf("%svec_%06d_%06d.in\n", inputFilePath, n, vectorNumber);
+        // Construct file path
+        char* fileName = (char*)malloc(sizeof(char) * 150);
         sprintf(fileName, "%s/vec_%06d_%06d.in", inputFilePath, n, vectorNumber);
         FILE* file = fopen(fileName, "r");
 
@@ -132,13 +139,14 @@ void * readInput(int num_args , ...){
             perror("Error opening vector file");
             return NULL;
         }
-        // Reading the file
+
+        // Read vector from file
         char* line = NULL;
         size_t lenLen = 0;
         int row = 0;
 
         if (getline(&line, &lenLen, file) == -1) {
-            perror("Error reading the file");
+            perror("Error reading vector file");
             free(vector);
             free(fileName);
             fclose(file);
@@ -151,7 +159,7 @@ void * readInput(int num_args , ...){
             vector[row++] = atof(token);
             token = strtok(NULL, ",");
         }
-    
+
         free(fileName);
         fclose(file);
         return vector;
@@ -168,12 +176,13 @@ bool isEigenVector(double** matrix, double* vector, int n, double* lambda) {
         return false;
     }
 
-    // Compute the matrix-vector product: product = matrix * vector
+    // Compute the matrix-vector product
     matrixVectorProduct(matrix, vector, n, MatVecProduct);
 
     // Find the first non-zero element in the vector
     int nonZeroIndex = -1;
-    for (int i = 0; i < n; i++) {
+    int i;
+    for (i = 0; i < n; i++) {
         if (vector[i] != 0) {
             nonZeroIndex = i;
             break;
@@ -186,60 +195,55 @@ bool isEigenVector(double** matrix, double* vector, int n, double* lambda) {
         return false;
     }
 
-    // Calculate the potential eigenvalue using the first non-zero element
+    // Calculate the potential eigenvalue
     double potentialLambda = MatVecProduct[nonZeroIndex] / vector[nonZeroIndex];
 
-    // Verify the eigenvalue condition for all other elements
-    for (int i = nonZeroIndex + 1; i < n; i++) {
+    // Verify the eigenvalue condition for all elements
+    for (i = nonZeroIndex + 1; i < n; i++) {
         if (vector[i] != 0) {
             double difference = fabs(MatVecProduct[i] - potentialLambda * vector[i]);
-            if (difference > 1e-6) { // Allow for floating-point tolerance
+            if (difference > 1e-6) { 
                 free(MatVecProduct);
                 return false;
             }
         }
     }
 
-    // Assign the calculated eigenvalue as a double and clean up
-    *lambda = potentialLambda;
+    *lambda = potentialLambda;  // Assign the computed eigenvalue
     free(MatVecProduct);
     return true;
 }
 
-void matrixVectorProduct(double** matrix, double* vector, int matID, double* product){
-    for (int i = 0; i < matID; i++) {  // Loop through rows of the matrix
-        double sum = 0; // Temporary variable to store the sum
-        for (int j = 0; j < matID; j++) {  // Loop through columns of the matrix
+// Function to multiply matrix and vector
+void matrixVectorProduct(double** matrix, double* vector, int matID, double* product) {
+    int i;
+    for (i = 0; i < matID; i++) { 
+        double sum = 0;  
+        for (int j = 0; j < matID; j++) {
             sum += matrix[i][j] * vector[j];
         }
-        product[i] = sum; // Assign the computed value
+        product[i] = sum; 
     }
 }
 
+// Function to append the eigenvalue result to a file
 void fileWrite(int matID, int vectorNumber, double eigenVal) {
-    // Construct the filename
-
-    char* fileName = (char*)malloc(sizeof(char)*150);
+    char fileName[150];
     sprintf(fileName, "%s/vec_%06d_%06d.in", inputFilePath, matID, vectorNumber);
-    // Open the file in append mode
     FILE* outfile = fopen(fileName, "a");
     if (!outfile) {
         perror("Error opening file");
         return;
     }
 
-    // Append the eigenvalue to the file
     fprintf(outfile, "\nEigenvalue: %.6f\n", eigenVal);
-
-    // Close the file
     fclose(outfile);
 }
 
-// Function to log the average execution time
+// Function to log average execution time
 void CalTime(int matID, double totalTime, int iterations) {
     char fileName[150];
-    sprintf(fileName, "%s/average_time.log",time_log);
-
+    sprintf(fileName, "%s/average_time.log", time_log);
     FILE* file = fopen(fileName, "a");
     if (!file) {
         perror("Error opening timing file");
